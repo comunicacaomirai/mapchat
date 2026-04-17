@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>MAPCHAT PRO - LANÇAMENTO</title>
+    <title>MAPCHAT PRO - PRIVACIDADE TOTAL</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
@@ -16,16 +16,13 @@
         
         #map { height: calc(100vh - 70px); width: 100%; margin-top: 35px; z-index: 1; }
         
-        /* Banner de Segurança */
         .safety-banner { position: fixed; top: 0; width: 100%; background: rgba(44, 62, 80, 0.9); color: white; text-align: center; padding: 8px; font-size: 11px; z-index: 4000; backdrop-filter: blur(5px); font-weight: bold; }
 
-        /* Customização dos Popups (Cards) */
         .leaflet-popup-content-wrapper { border-radius: 15px; padding: 5px; box-shadow: var(--shadow); }
         .custom-card-popup { min-width: 180px; }
         .custom-card-popup b { color: var(--admin); font-size: 14px; display: block; margin-bottom: 5px; }
         .custom-card-popup p { margin: 5px 0; font-size: 13px; color: #444; line-height: 1.4; word-wrap: break-word; }
         
-        /* Estilização da Lista (Mural) com Animação */
         #mural-view { position: fixed; top: 0; left: 0; width: 100%; height: calc(100vh - 70px); background: #f8f9fa; z-index: 1500; display: none; overflow-y: auto; padding: 60px 20px 20px 20px; box-sizing: border-box; }
         .card-mural { 
             background: #fff; padding: 18px; border-radius: 12px; margin-bottom: 15px; 
@@ -36,7 +33,6 @@
         
         .card-comercial { border-left: 5px solid var(--gold); background: #fffdf0; }
         
-        /* Botões e Interface */
         .bottom-nav { position: fixed; bottom: 0; width: 100%; height: 70px; background: white; display: flex; justify-content: space-around; align-items: center; box-shadow: 0 -2px 15px rgba(0,0,0,0.08); z-index: 2000; }
         .nav-btn { border:none; background:none; font-weight:600; color: #7f8c8d; cursor:pointer; display: flex; flex-direction: column; align-items: center; font-size: 10px; }
         .nav-btn.active { color: var(--primary); }
@@ -46,7 +42,6 @@
         
         .btn-entrar { background: var(--primary); color: white; border: none; padding: 16px; border-radius: 10px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 10px rgba(231, 76, 60, 0.3); margin-top: 10px; cursor: pointer; }
 
-        /* Push Notification */
         #push-notification { position: fixed; top: -100px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; background: var(--admin); color: white; padding: 15px; border-radius: 15px; z-index: 9999; transition: 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: flex; justify-content: space-between; align-items: center; box-shadow: var(--shadow); }
         #push-notification.show { top: 50px; }
 
@@ -66,9 +61,9 @@
     <div id="entry-form">
         <h2 style="text-align: center; color: var(--admin);">Nova Postagem</h2>
         <input type="text" id="user-name" placeholder="Seu Nome" oninput="checkAdmin(this.value)">
-        <input type="tel" id="user-whatsapp" placeholder="WhatsApp (opcional)">
+        <input type="tel" id="user-whatsapp" placeholder="WhatsApp (apenas para moderação)">
         
-        <textarea id="user-msg" placeholder="O que está a acontecer aqui?" rows="4" maxlength="150" oninput="atualizarContador(this.value)"></textarea>
+        <textarea id="user-msg" placeholder="O que está acontecendo aqui?" rows="4" maxlength="150" oninput="atualizarContador(this.value)"></textarea>
         <div class="char-counter" id="char-count">0 / 150</div>
         
         <button class="btn-entrar" id="btn-postar">PUBLICAR AGORA</button>
@@ -118,13 +113,11 @@
     let isModoComercial = false;
     let isModoGerenciar = false;
 
-    // --- SETUP MAPA E CLUSTER ---
     const map = L.map('map', { zoomControl: false }).setView([-25.44, -49.12], 13);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
     const markersCluster = L.markerClusterGroup();
     map.addLayer(markersCluster);
 
-    // --- FUNÇÕES DE INTERFACE ---
     window.atualizarContador = (val) => {
         document.getElementById('char-count').innerText = val.length + " / 150";
     };
@@ -144,28 +137,17 @@
         if(tab === 'mapa') fecharFormulario();
     };
 
-    // --- CARREGAMENTO INICIAL ---
-    window.addEventListener('load', () => {
-        const salvoNome = localStorage.getItem('mapchat_nome');
-        const salvoZap = localStorage.getItem('mapchat_zap');
-        if (salvoNome) {
-            document.getElementById('user-name').value = salvoNome;
-            checkAdmin(salvoNome);
-        }
-        if (salvoZap) document.getElementById('user-whatsapp').value = salvoZap;
-    });
-
     window.checkAdmin = (val) => {
         document.getElementById('admin-menu').style.display = val.includes(ADMIN_KEY) ? 'block' : 'none';
     };
 
-    window.toggleModoGerenciar = () => { isModoGerenciar = !isModoGerenciar; alert("Modo Moderação: " + isModoGerenciar); };
-    window.setPostComercial = () => { isModoComercial = true; alert("Próximo post será Comercial"); };
+    window.toggleModoGerenciar = () => { isModoGerenciar = !isModoGerenciar; alert("Moderação: " + isModoGerenciar); };
+    window.setPostComercial = () => { isModoComercial = true; alert("Post Comercial Ativado"); };
     window.apagarPin = async (id) => { if(confirm("Apagar permanentemente?")) await deleteDoc(doc(db, "pins", id)); };
 
-    window.darLike = async (id, isFake) => {
+    window.darLike = async (id) => {
         let curtidos = JSON.parse(localStorage.getItem('mapchat_curtidos') || '[]');
-        if(curtidos.includes(id)) return alert("Já curtiu esta mensagem!");
+        if(curtidos.includes(id)) return alert("Já curtiu!");
         try {
             await updateDoc(doc(db, "pins", id), { likes: increment(1) });
             curtidos.push(id);
@@ -173,28 +155,25 @@
         } catch (e) { console.error(e); }
     };
 
-    // --- LÓGICA DE PUBLICAÇÃO COM TRAVAS ---
     document.getElementById('btn-postar').addEventListener('click', async () => {
         const btn = document.getElementById('btn-postar');
         const nomeRaw = document.getElementById('user-name').value;
         const zap = document.getElementById('user-whatsapp').value;
         const msg = document.getElementById('user-msg').value;
 
-        if(!nomeRaw || !msg) return alert("Por favor, preencha o seu nome e a mensagem!");
+        if(!nomeRaw || !msg) return alert("Preencha nome e mensagem!");
 
-        // --- REGRA: 3 POSTS POR DIA ---
         const hoje = new Date().toLocaleDateString();
         const limitInfo = JSON.parse(localStorage.getItem('mapchat_limit') || '{"data":"","qtd":0}');
         
         if(limitInfo.data === hoje && limitInfo.qtd >= 3 && !nomeRaw.includes(ADMIN_KEY)) {
-            return alert("Limite diário atingido! Podes fazer até 3 postagens por dia.");
+            return alert("Limite diário de 3 postagens atingido!");
         }
 
         btn.disabled = true;
-        btn.innerText = "A LOCALIZAR...";
+        btn.innerText = "LOCALIZANDO...";
 
         navigator.geolocation.getCurrentPosition(async (pos) => {
-            btn.innerText = "A GUARDAR...";
             try {
                 await addDoc(collection(db, "pins"), {
                     nome: nomeRaw.replace(ADMIN_KEY, "").trim(),
@@ -208,7 +187,6 @@
                     timestamp: Timestamp.now()
                 });
                 
-                // Salvar dados de sessão e atualizar limite
                 localStorage.setItem('mapchat_nome', nomeRaw);
                 localStorage.setItem('mapchat_zap', zap);
                 localStorage.setItem('mapchat_limit', JSON.stringify({
@@ -218,19 +196,13 @@
 
                 isModoComercial = false;
                 document.getElementById('user-msg').value = "";
-                document.getElementById('char-count').innerText = "0 / 150";
                 fecharFormulario();
-            } catch (err) { alert("Erro ao ligar ao servidor."); }
+            } catch (err) { alert("Erro ao salvar."); }
             btn.disabled = false;
             btn.innerText = "PUBLICAR AGORA";
-        }, () => { 
-            alert("Precisamos do GPS para colocar a tua mensagem no mapa."); 
-            btn.disabled = false; 
-            btn.innerText = "PUBLICAR AGORA";
-        });
+        }, () => { alert("Ative o GPS."); btn.disabled = false; });
     });
 
-    // --- LEITURA REAL-TIME COM FILTRO 24H ---
     const corte24h = Timestamp.fromMillis(Date.now() - (24 * 60 * 60 * 1000));
     const q = query(collection(db, "pins"), where("timestamp", ">", corte24h));
 
@@ -238,7 +210,6 @@
         markersCluster.clearLayers();
         document.getElementById('lista-recados').innerHTML = "";
         const curtidos = JSON.parse(localStorage.getItem('mapchat_curtidos') || '[]');
-        const meusIds = JSON.parse(localStorage.getItem('mapchat_meus_ids') || '[]');
         
         snap.forEach(d => {
             const val = d.data();
@@ -246,51 +217,38 @@
             const jaCurti = curtidos.includes(id);
             const isCom = val.tipo === 'comercial';
             
-            // Ícones diferenciados
             const iconUrl = isCom ? 'https://cdn-icons-png.flaticon.com/512/1169/1169908.png' : 'https://cdn-icons-png.flaticon.com/512/3177/3177361.png';
             const marker = L.marker([val.lat, val.lng], { icon: L.icon({iconUrl, iconSize:[35,35]}) });
 
-            // Popup Estilizado (Card)
+            // Popup SEM o botão de WhatsApp
             const popupContent = `
                 <div class="custom-card-popup">
                     <b>${val.nome}</b>
                     <p>${val.recado}</p>
-                    <div style="display:flex; gap:10px; align-items:center;">
-                        <button class="like-btn" onclick="darLike('${id}', false)">
-                            ${jaCurti ? '❤️' : '🤍'} ${val.likes || 0}
-                        </button>
-                        ${val.whatsapp ? `<a href="https://wa.me/55${val.whatsapp}" target="_blank" style="font-size:10px; color:green; text-decoration:none;">WhatsApp</a>` : ''}
-                    </div>
+                    <button class="like-btn" onclick="darLike('${id}')">
+                        ${jaCurti ? '❤️' : '🤍'} ${val.likes || 0}
+                    </button>
                 </div>`;
             
             marker.bindPopup(popupContent);
             markersCluster.addLayer(marker);
 
-            // Mural Estilizado
+            // Mural SEM o botão de WhatsApp
             document.getElementById('lista-recados').innerHTML += `
                 <div class="card-mural ${isCom ? 'card-comercial' : ''}">
                     <div style="display:flex; justify-content:space-between;">
-                        <strong>${isCom ? '⭐ COMERCIAL: ' : ''}${val.nome}</strong>
-                        <small style="color:#999">Ativo agora</small>
+                        <strong>${isCom ? '⭐ ' : ''}${val.nome}</strong>
+                        <small style="color:#999">Ativo</small>
                     </div>
                     <p>${val.recado}</p>
                     <div style="display:flex; justify-content: space-between; align-items: center; margin-top:10px;">
-                        <button class="like-btn" onclick="darLike('${id}', false)" style="color: ${jaCurti ? '#e74c3c' : '#666'}">
+                        <button class="like-btn" onclick="darLike('${id}')" style="color: ${jaCurti ? '#e74c3c' : '#666'}">
                             ${jaCurti ? '❤️' : '🤍'} ${val.likes || 0} Curtidas
                         </button>
-                        ${isModoGerenciar ? `<button onclick="apagarPin('${id}')" style="color:red; border:none; background:none; cursor:pointer;">Eliminar</button>` : ''}
+                        ${isModoGerenciar ? `<button onclick="apagarPin('${id}')" style="color:red; border:none; background:none; cursor:pointer;">Excluir</button>` : ''}
                     </div>
                 </div>`;
         });
-    });
-
-    // Avisos e Alertas do Admin
-    onSnapshot(doc(db, "config", "alerta"), (s) => { 
-        if(s.exists()){ 
-            document.getElementById('push-text').innerText = s.data().texto; 
-            document.getElementById('push-notification').classList.add('show'); 
-            setTimeout(() => document.getElementById('push-notification').classList.remove('show'), 8000); 
-        }
     });
 </script>
 </body>

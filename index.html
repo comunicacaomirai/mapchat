@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>MAPCHAT PRO - TRAVA DE LIKES</title>
+    <title>MAPCHAT PRO - 24H</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         :root { --primary: #e74c3c; --admin: #2c3e50; --gold: #f1c40f; }
@@ -38,7 +38,7 @@
         <button onclick="this.parentElement.classList.remove('show')" style="background:none; border:1px solid white; color:white; border-radius:50%;">X</button>
     </div>
 
-    <div class="safety-banner">🔒 Localização aproximada para sua segurança</div>
+    <div class="safety-banner">🔒 Localização aproximada para sua segurança, recados são apagados depois de 24h</div>
 
     <div id="entry-form">
         <div id="banner-alerta" style="display:none; background:#d4edda; padding:10px; border-radius:8px; text-align:center; color:#155724; font-weight:bold; margin-bottom:10px;"></div>
@@ -78,7 +78,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, onSnapshot, query, Timestamp, doc, setDoc, deleteDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, onSnapshot, query, where, Timestamp, doc, setDoc, deleteDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyAIO2x_OKrctSsNltwSIFqWnZIS2qKrRTQ",
@@ -128,17 +128,11 @@
     // --- FUNÇÃO DE LIKE COM TRAVA ---
     window.darLike = async (id, isFake) => {
         if (isFake) return alert("❤️!");
-
-        // Verifica se já deu like neste ID
         let curtidos = JSON.parse(localStorage.getItem('mapchat_curtidos') || '[]');
-        
-        if(curtidos.includes(id)) {
-            return alert("Você já curtiu esta postagem!");
-        }
+        if(curtidos.includes(id)) return alert("Você já curtiu esta postagem!");
 
         try {
             await updateDoc(doc(db, "pins", id), { likes: increment(1) });
-            // Salva na lista local para travar
             curtidos.push(id);
             localStorage.setItem('mapchat_curtidos', JSON.stringify(curtidos));
         } catch (e) {
@@ -199,7 +193,11 @@
         }, () => { alert("Ative o GPS."); btn.disabled = false; });
     });
 
-    onSnapshot(collection(db, "pins"), (snap) => {
+    // --- LEITURA COM FILTRO DE 24 HORAS ---
+    const vinteEQuatroHorasAtras = Timestamp.fromMillis(Date.now() - (24 * 60 * 60 * 1000));
+    const q = query(collection(db, "pins"), where("timestamp", ">", vinteEQuatroHorasAtras));
+
+    onSnapshot(q, (snap) => {
         markersGroup.clearLayers();
         document.getElementById('lista-recados').innerHTML = "";
         const meusIds = JSON.parse(localStorage.getItem('mapchat_meus_ids') || '[]');

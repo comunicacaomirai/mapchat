@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>MAPCHAT - Recados Locais</title>
+    <title>MAPCHAT - Rede de Recados</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
@@ -11,11 +11,20 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
 
     <style>
-        :root { --primary: #e74c3c; --admin: #2c3e50; --gold: #f1c40f; --news: #3498db; --shadow: 0 4px 15px rgba(0,0,0,0.15); }
+        :root { --primary: #e74c3c; --admin: #2c3e50; --gold: #f1c40f; --news-vibrant: #007bff; --shadow: 0 4px 15px rgba(0,0,0,0.15); }
         body { margin: 0; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; overflow: hidden; background: #f4f4f4; }
         #map { height: calc(100vh - 70px); width: 100%; margin-top: 35px; z-index: 1; }
+        
         .safety-banner { position: fixed; top: 0; width: 100%; background: rgba(44, 62, 80, 0.9); color: white; text-align: center; padding: 8px; font-size: 11px; z-index: 4000; backdrop-filter: blur(5px); font-weight: bold; letter-spacing: 1px; }
         
+        /* Animação para os ícones de notícias brilharem */
+        @keyframes pulse-blue {
+            0% { transform: scale(1); filter: drop-shadow(0 0 0px var(--news-vibrant)); }
+            50% { transform: scale(1.1); filter: drop-shadow(0 0 8px var(--news-vibrant)); }
+            100% { transform: scale(1); filter: drop-shadow(0 0 0px var(--news-vibrant)); }
+        }
+        .news-icon-animated { animation: pulse-blue 2s infinite ease-in-out; }
+
         #push-notification { position: fixed; top: -100px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; background: var(--admin); color: white; padding: 15px; border-radius: 15px; z-index: 10000; transition: 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: flex; justify-content: space-between; align-items: center; box-shadow: var(--shadow); }
         #push-notification.show { top: 50px; }
 
@@ -34,9 +43,6 @@
         .btn-voltar { background: #ecf0f1; color: #7f8c8d; border: none; padding: 14px; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 5px; }
 
         .admin-panel { margin-top: 15px; padding: 15px; background: #f0f2f5; border-radius: 12px; border: 1px dashed var(--admin); }
-        .status-badge { font-size: 9px; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; font-weight: bold; }
-        .status-on { background: #2ecc71; color: white; }
-        .status-off { background: #95a5a6; color: white; }
     </style>
 </head>
 <body>
@@ -60,10 +66,6 @@
 
         <div id="admin-menu" style="display:none;" class="admin-panel">
             <small>🛠 <b>PAINEL MIRAI ADM</b></small>
-            <div id="status-indicators" style="margin-top:5px;">
-                <span id="label-mod" class="status-badge status-off">Moderação OFF</span>
-                <span id="label-com" class="status-badge status-off">Comercial OFF</span>
-            </div>
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px;">
                 <button onclick="toggleModoGerenciar()" style="padding: 8px; font-size: 11px;">Moderar</button>
                 <button onclick="setPostComercial()" style="padding: 8px; font-size: 11px; background: var(--gold); border:none; border-radius:5px;">Comercial</button>
@@ -104,7 +106,6 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const ADMIN_KEY = "MIRAI2026";
-    const URL_PLANILHA = "https://script.google.com/macros/s/AKfycbzPS1Un54LZBfG7UZF6c1Gfdpfp7-Pq3Pm9MZr5pID1fQaLHAxXtKGOeZ77XNauYhfg/exec";
     
     let isModoComercial = false;
     let isModoGerenciar = false;
@@ -114,7 +115,7 @@
     const markersCluster = L.markerClusterGroup();
     map.addLayer(markersCluster);
 
-    // --- SISTEMA DE NOTÍCIAS AUTOMÁTICAS (3 por cidade) ---
+    // --- SISTEMA DE NOTÍCIAS COM ÍCONE DE FOGO AZUL BRILHANTE ---
     async function carregarNoticiasLocais() {
         const RSS_URL = "https://g1.globo.com/rss/g1/pr/parana/";
         const API_URL = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(RSS_URL)}`;
@@ -132,9 +133,16 @@
             cidades.forEach(cid => {
                 for(let i=0; i<3; i++) {
                     const item = data.items[newsIdx % data.items.length];
-                    const newsIcon = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/2537/2537926.png', iconSize: [30, 30] });
-                    const marker = L.marker([cid.lat + (Math.random()*0.01), cid.lng + (Math.random()*0.01)], { icon: newsIcon });
-                    marker.bindPopup(`<div style="width:180px"><small style="color:var(--news)"><b>NOTÍCIA: ${cid.nome}</b></small><br><strong>${item.title}</strong><br><a href="${item.link}" target="_blank" style="font-size:10px;">Ver mais...</a></div>`);
+                    // Ícone de Fogo Azul com classe CSS para animar
+                    const newsIcon = L.divIcon({
+                        html: `<img src="https://cdn-icons-png.flaticon.com/512/426/426833.png" class="news-icon-animated" style="width:32px; height:32px;">`,
+                        className: 'dummy',
+                        iconSize: [32, 32],
+                        iconAnchor: [16, 32]
+                    });
+
+                    const marker = L.marker([cid.lat + (Math.random()*0.015), cid.lng + (Math.random()*0.015)], { icon: newsIcon });
+                    marker.bindPopup(`<div style="width:180px"><small style="color:var(--news-vibrant)"><b>🔥 URGENTE: ${cid.nome}</b></small><br><strong>${item.title}</strong><br><a href="${item.link}" target="_blank" style="font-size:10px; color:var(--news-vibrant); font-weight:bold;">LER NOTÍCIA COMPLETA</a></div>`);
                     markersCluster.addLayer(marker);
                     newsIdx++;
                 }
@@ -144,24 +152,12 @@
 
     // --- POVOAMENTO INICIAL (Recados Isca) ---
     const recadosIniciais = [
-        // Pinhais
         { n: "Anônimo", m: "Radar da Jacob Macanhan tá multando mesmo?", lat: -25.438, lng: -49.185 },
         { n: "Morador", m: "Melhor pastel da feira de Pinhais!", lat: -25.442, lng: -49.195 },
-        { n: "User99", m: "Trânsito pesado perto do terminal agora.", lat: -25.445, lng: -49.191 },
-        { n: "Anônimo", m: "Perdi chaves no Bosque Municipal, alguém viu?", lat: -25.440, lng: -49.180 },
-        { n: "Vôlei", m: "Alguém pro Parcão hoje 17h?", lat: -25.435, lng: -49.190 },
-        // Campina Grande do Sul (Jardim Paulista)
+        { n: "Anônimo", m: "Vi o anúncio no Insta e vim ver as fofocas de Pinhais kkk", lat: -25.445, lng: -49.191 },
         { n: "Saúde", m: "Posto do Jardim Paulista tá vazio hoje!", lat: -25.318, lng: -49.088 },
-        { n: "Cuidado", m: "Cachorro solto na Pres. Faria, fiquem espertos.", lat: -25.315, lng: -49.085 },
-        { n: "Fofoca", m: "Alguém sabe da luz aqui no Jd Paulista?", lat: -25.320, lng: -49.090 },
-        { n: "Lanche", m: "Carrinho novo na praça é 10/10!", lat: -25.317, lng: -49.087 },
-        { n: "Plantão", m: "Qual farmácia tá aberta aqui agora?", lat: -25.319, lng: -49.089 },
-        // Quatro Barras
-        { n: "Natureza", m: "Morro do Samambaia amanhã cedo?", lat: -25.365, lng: -49.070 },
-        { n: "Dica", m: "Graciosa tá linda hoje!", lat: -25.360, lng: -49.080 },
-        { n: "Aviso", m: "Muita neblina no centro de QB.", lat: -25.368, lng: -49.075 },
-        { n: "Obra", m: "Alguém indica pedreiro em Quatro Barras?", lat: -25.370, lng: -49.078 },
-        { n: "Evento", m: "Vai ter música na praça hoje?", lat: -25.366, lng: -49.072 }
+        { n: "Lanche", m: "Carrinho novo na praça de Campina é 10/10!", lat: -25.317, lng: -49.087 },
+        { n: "Aviso", m: "Muita neblina no centro de QB agora.", lat: -25.368, lng: -49.075 }
     ];
 
     function plotarRecadosIsca() {
@@ -173,7 +169,7 @@
         });
     }
 
-    // --- FUNÇÕES DE NAVEGAÇÃO ---
+    // --- NAVEGAÇÃO E POSTAGEM ---
     window.abrirPostagem = () => { document.getElementById('entry-form').style.display = 'flex'; };
     window.fecharFormulario = () => { document.getElementById('entry-form').style.display = 'none'; };
     window.switchTab = (tab) => {
@@ -184,43 +180,34 @@
     };
 
     window.checkAdmin = (val) => { document.getElementById('admin-menu').style.display = val.includes(ADMIN_KEY) ? 'block' : 'none'; };
-    window.toggleModoGerenciar = () => { isModoGerenciar = !isModoGerenciar; document.getElementById('label-mod').innerText = isModoGerenciar ? "Moderação ON" : "Moderação OFF"; };
-    window.setPostComercial = () => { isModoComercial = !isModoComercial; document.getElementById('label-com').innerText = isModoComercial ? "Comercial ON" : "Comercial OFF"; };
 
-    // --- POSTAGEM ---
     document.getElementById('btn-postar').addEventListener('click', async () => {
         const btn = document.getElementById('btn-postar');
-        const nomeRaw = document.getElementById('user-name').value;
         const msg = document.getElementById('user-msg').value;
         if(!msg) return alert("Escreva um recado!");
-
         btn.disabled = true;
         navigator.geolocation.getCurrentPosition(async (pos) => {
-            const dados = {
-                nome: (nomeRaw.replace(ADMIN_KEY, "").trim()) || "Anônimo",
-                recado: msg,
-                tipo: isModoComercial ? 'comercial' : 'normal',
-                likes: 0,
-                lat: pos.coords.latitude,
-                lng: pos.coords.longitude,
-                timestamp: Timestamp.now()
-            };
             try {
-                await addDoc(collection(db, "pins"), dados);
+                await addDoc(collection(db, "pins"), {
+                    nome: document.getElementById('user-name').value || "Anônimo",
+                    recado: msg,
+                    tipo: isModoComercial ? 'comercial' : 'normal',
+                    lat: pos.coords.latitude,
+                    lng: pos.coords.longitude,
+                    timestamp: Timestamp.now()
+                });
                 fecharFormulario();
                 document.getElementById('user-msg').value = "";
-            } catch (e) { alert("Erro ao publicar."); }
+            } catch (e) { alert("Erro."); }
             btn.disabled = false;
-        }, () => { alert("Ative o GPS para postar!"); btn.disabled = false; });
+        }, () => { alert("Ative o GPS!"); btn.disabled = false; });
     });
 
-    // --- SINCRONIZAÇÃO FIREBASE ---
     const corte24h = Timestamp.fromMillis(Date.now() - (24 * 60 * 60 * 1000));
     onSnapshot(query(collection(db, "pins"), where("timestamp", ">", corte24h)), (snap) => {
         markersCluster.clearLayers();
-        plotarRecadosIsca(); // Garante que as iscas fiquem no mapa
+        plotarRecadosIsca();
         carregarNoticiasLocais(); 
-        
         document.getElementById('lista-recados').innerHTML = "";
         snap.forEach(d => {
             const val = d.data();
@@ -229,18 +216,9 @@
             const marker = L.marker([val.lat, val.lng], { icon: L.icon({iconUrl, iconSize:[35,35]}) });
             marker.bindPopup(`<b>${val.nome}</b><p>${val.recado}</p>`);
             markersCluster.addLayer(marker);
-
-            document.getElementById('lista-recados').innerHTML += `
-                <div class="card-mural ${isCom ? 'card-comercial' : ''}">
-                    <strong>${isCom ? '⭐ ' : ''}${val.nome}</strong>
-                    <p>${val.recado}</p>
-                </div>`;
+            document.getElementById('lista-recados').innerHTML += `<div class="card-mural ${isCom ? 'card-comercial' : ''}"><strong>${val.nome}</strong><p>${val.recado}</p></div>`;
         });
     });
-
-    // Inicialização
-    carregarNoticiasLocais();
-    plotarRecadosIsca();
 </script>
 </body>
 </html>
